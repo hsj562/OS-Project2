@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
-
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -14,28 +12,21 @@
 #define PAGE_SIZE 4096
 #define BUF_SIZE 512
 int main (int argc, char* argv[])
-{	
-
-	int file_cnt = atoi(argv[1]);
-		
+{
 	char buf[BUF_SIZE];
+	int file_num = atoi(argv[1]);
 	int i, dev_fd, file_fd;// the fd for the device and the fd for the input file
-	size_t ret, file_size, data_size = -1;
+	size_t ret, file_size = 0, data_size = -1;
 	char file_name[50];
 	char method[20];
 	char ip[20];
-	
-	strcpy(method, argv[2+file_cnt]);
-	strcpy(file_name, argv[1+file_cnt]);
-	strcpy(ip, argv[3+file_cnt]);
-	
-	//printf("file_size: %d, method: %s, ip: %s\n", file_size, method, ip);
-
 	struct timeval start;
 	struct timeval end;
 	double trans_time; //calulate the time between the device is opened and it is closed
 	char *kernel_address, *file_address;
-
+	strcpy(file_name, argv[1 + file_num]);
+	strcpy(method, argv[2 + file_num]);
+	strcpy(ip, argv[3 + file_num]);
 
 	if( (dev_fd = open("/dev/slave_device", O_RDWR)) < 0)//should be O_RDWR for PROT_WRITE when mmap()
 	{
@@ -54,23 +45,35 @@ int main (int argc, char* argv[])
 		perror("ioclt create slave socket error\n");
 		return 1;
 	}
-
-	write(1, "ioctl success\n", 14);
-	
-	
+	size_t offset = 0;
 	switch(method[0])
 	{
 		case 'f'://fcntl : read()/write()
 			do
 			{
 				ret = read(dev_fd, buf, sizeof(buf)); // read from the the device
-				printf("read from device: %s\n", ret);
 				write(file_fd, buf, ret); //write to the input file
 				file_size += ret;
 			}while(ret > 0);
 			break;
+		case 'm':
+			while(1){
+				ret = ioctl(dev_fd, 0x12345678);
+				if(ret != 0){
+					posix_fallocate(file_fd, offset, ret);
+					kernel_address = mmap(NULL, ret, PROT_READ, MAP_SHARED, dev_fd, offset);
+					file_address = mmap(NULL, ret, PROT_WRITE, MAP_SHARED, file_fd, offset);
+					memcpy(file_address, kernel_address, ret);
+					offset += ret;
+					continue;
+				}
+				file_size = offset;
+				break;
+			}
+			break;
+				
 	}
-
+	ioctl(dev_fd, 5235);
 
 
 	if(ioctl(dev_fd, 0x12345679) == -1)// end receiving data, close the connection
@@ -87,5 +90,3 @@ int main (int argc, char* argv[])
 	close(dev_fd);
 	return 0;
 }
-
-
