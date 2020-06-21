@@ -60,6 +60,7 @@ int main (int argc, char* argv[])
 	}
 
 
+	size_t map_sz = PAGE_SIZE * 5;
 	switch(method[0])
 	{
 		case 'f': //fcntl : read()/write()
@@ -70,7 +71,22 @@ int main (int argc, char* argv[])
 			}while(ret > 0);
 			break;
 		case 'm': // mmap
+			while(file_size - offset > map_sz) {
+				file_address = mmap(NULL, map_sz, PROT_READ, MAP_SHARED, file_fd, offset);
+				kernel_address = mmap(NULL, map_sz, PROT_WRITE, MAP_SHARED, dev_fd, offset);
+				offset += map_sz;
+				memcpy(kernel_address, file_address, map_sz);
+				ioctl(dev_fd, 0x12345678, map_sz);
+			}
+			if(file_size - offset > 0) {
+				file_address = mmap(NULL, file_size-offset, PROT_READ, MAP_SHARED, file_fd, offset);
+				kernel_address = mmap(NULL, file_size-offset, PROT_WRITE, MAP_SHARED, dev_fd, offset);
+				memcpy(kernel_address, file_address, file_size-offset);
+				ioctl(dev_fd, 0x12345678, file_size-offset);
+				offset = file_size;
+			}
 	}
+	ioctl(dev_fd, 0);
 
 	if(ioctl(dev_fd, 0x12345679) == -1) // end sending data, close the connection
 	{
