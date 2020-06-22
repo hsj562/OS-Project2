@@ -65,8 +65,8 @@ int main (int argc, char* argv[])
 				remain = file_size % mmap_size;
 				if(remain == 0){
 					if(file_size != 0){
-						munmap(to, mmap_size);
 						ioctl(dev_fd, 0x12345676, (unsigned long)to);
+						munmap(to, mmap_size);
 					}
 					ftruncate(file_fd, file_size + mmap_size);
 					to = mmap(NULL, mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, file_fd, file_size);
