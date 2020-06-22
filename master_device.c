@@ -59,6 +59,8 @@ static int addr_len;
 //static  struct mmap_info *mmap_msg; // pointer to the mapped data in this device
 
 //file operations
+static int my_mmap(struct file *filp, struct vm_area_struct *vma);
+
 void mmap_open(struct vm_area_struct *vma) {
 	return;
 }
