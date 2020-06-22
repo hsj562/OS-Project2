@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -9,7 +8,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include <stdlib.h>
 
 #define PAGE_SIZE 4096
 #define BUF_SIZE 512
@@ -29,7 +27,7 @@ int main (int argc, char* argv[])
 	strcpy(file_name, argv[1 + file_num]);
 	strcpy(method, argv[2 + file_num]);
 	strcpy(ip, argv[3 + file_num]);
-	char *to;
+
 	if( (dev_fd = open("/dev/slave_device", O_RDWR)) < 0)//should be O_RDWR for PROT_WRITE when mmap()
 	{
 		perror("failed to open /dev/slave_device\n");
@@ -47,8 +45,7 @@ int main (int argc, char* argv[])
 		perror("ioclt create slave socket error\n");
 		return 1;
 	}
-	int remain;
-	int mmap_size = sysconf(_SC_PAGE_SIZE);
+	size_t offset = 0;
 	switch(method[0])
 	{
 		case 'f'://fcntl : read()/write()
@@ -60,27 +57,19 @@ int main (int argc, char* argv[])
 			}while(ret > 0);
 			break;
 		case 'm':
-			ret = read(dev_fd, buf, sizeof(buf));
-			while(ret > 0){
-				remain = file_size % mmap_size;
-				if(remain == 0){
-					if(file_size != 0){
-						ioctl(dev_fd, 0x12345676, (unsigned long)to);
-						munmap(to, mmap_size);
-					}
-					ftruncate(file_fd, file_size + mmap_size);
-					to = mmap(NULL, mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, file_fd, file_size);
-				};
-				memcpy(&to[remain], buf, ret);
-				file_size += ret;
-				ret = read(dev_fd, buf, sizeof(buf));
-			}
-			ftruncate(file_fd, file_size);
-			ioctl(dev_fd, 0x12345676, (unsigned int)to);
-			munmap(to, mmap_size);
+			while ((ret = ioctl(dev_fd, 0x12345678)) != 0) {
+				posix_fallocate(file_fd, offset, ret);
+				file_address = mmap(NULL, ret, PROT_WRITE, MAP_SHARED, file_fd, offset);
+				kernel_address = mmap(NULL, ret, PROT_READ, MAP_SHARED, dev_fd, offset);
+				memcpy(file_address, kernel_address, ret);
+				offset += ret;
+			}	
+			file_size = offset;
 			break;
-				
 	}
+	ioctl(dev_fd, 5235);
+
+
 	if(ioctl(dev_fd, 0x12345679) == -1)// end receiving data, close the connection
 	{
 		perror("ioclt client exits error\n");
@@ -88,7 +77,7 @@ int main (int argc, char* argv[])
 	}
 	gettimeofday(&end, NULL);
 	trans_time = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)*0.0001;
-	printf("Transmission time: %lf ms, File size: %ld bytes\n", trans_time, file_size / 8);
+	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, file_size / 8);
 
 
 	close(file_fd);
