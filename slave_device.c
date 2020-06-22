@@ -65,10 +65,15 @@ void mmap_close(struct vm_area_struct *vma) {
 	return;
 }
 
+struct vm_operations_struct mmap_vm_ops = {
+	.open = mmap_open,
+	.close = mmap_close
+};
+
 static int my_mmap(struct file *flip, struct vm_area_struct *vma) {
 	unsigned long size = vma->vm_end - vma->vm_start;
 	remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, size, vma->vm_page_prot);
-	vma->vm_flag |= VM_RESERVED;
+	vma->vm_flags |= VM_RESERVED;
 	vma->vm_ops = &mmap_vm_ops;
 	vma->vm_private = flip->private_data;
 	mmap_open(vma);
