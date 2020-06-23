@@ -16,9 +16,9 @@ int main (int argc, char* argv[])
 {
 	char buf[BUF_SIZE];
 	int file_num = atoi(argv[1]);
-	int i, dev_fd, file_fd;// the fd for the device and the fd for the input file
-	size_t ret, file_size = 0, data_size = -1;
-	char file_name[50];
+	int i, dev_fd, file_fd[100];// the fd for the device and the fd for the input file
+	size_t ret, file_size[100], data_size = -1;
+	char file_name[100][50];
 	char method[20];
 	char ip[20];
 	struct timeval start;
@@ -35,12 +35,15 @@ int main (int argc, char* argv[])
 		return 1;
 	}
 	gettimeofday(&start ,NULL);
-	if( (file_fd = open (file_name, O_RDWR | O_CREAT | O_TRUNC)) < 0)
-	{
-		perror("failed to open input file\n");
-		return 1;
+	for(int j = 0; j < file_num; j++){
+		strcpy(file_name, argv[2 + j]);
+		if( (file_fd[j] = open (file_name[j], O_RDWR | O_CREAT | O_TRUNC)) < 0)
+		{
+			perror("failed to open input file\n");
+			return 1;
+		}
 	}
-
+	for(int j = 0; j < file_num; j++){
 	if(ioctl(dev_fd, 0x12345677, ip) == -1)	//0x12345677 : connect to master in the device
 	{
 		perror("ioclt create slave socket error\n");
@@ -82,9 +85,9 @@ int main (int argc, char* argv[])
 		ioctl(dev_fd, 0x12345680);
 		munmap(dev_fd, num_page * PAGE_SIZE);
 	}
-
-	close(file_fd);
-	close(dev_fd);
 	}
+	for(int j = 0; j < file_num; j++)
+		close(file_fd[j]);
+	close(dev_fd);
 	return 0;
 }
