@@ -33,7 +33,6 @@
 #define BUF_SIZE 512
 
 
-
 struct dentry  *file1;//debug file
 
 typedef struct socket * ksocket_t;
@@ -71,13 +70,13 @@ struct vm_operations_struct mmap_vm_ops = {
 };
 
 static int my_mmap(struct file *flip, struct vm_area_struct *vma) {
-	unsigned long size = vma->vm_end - vma->vm_start;
-	remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, size, vma->vm_page_prot);
 	vma->vm_flags |= VM_RESERVED;
 	vma->vm_ops = &mmap_vm_ops;
 	vma->vm_private = flip->private_data;
+
+	unsigned long size = vma->vm_end - vma->vm_start;
+	remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, size, vma->vm_page_prot);
 	mmap_open(vma);
-	
 	return 0;
 }
 
