@@ -57,12 +57,29 @@ static mm_segment_t old_fs;
 static ksocket_t sockfd_cli;//socket to the master server
 static struct sockaddr_in addr_srv; //address of the master server
 
+static int my_mmap(struct file *flip, struct vm_area_struct *vma);
+
 void mmap_open(struct vm_area_strcut *vma) {
 	return;
 }
 void mmap_close(struct vm_area_struct *vma) {
 	return;
 }
+//file operations
+static struct file_operations slave_fops = {
+	.owner = THIS_MODULE,
+	.unlocked_ioctl = slave_ioctl,
+	.open = slave_open,
+	.read = receive_msg,
+	.release = slave_close,
+	.mmap = my_mmap
+};
+//device info
+static struct miscdevice slave_dev = {
+	.minor = MISC_DYNAMIC_MINOR,
+	.name = "slave_device",
+	.fops = &slave_fops
+};
 
 struct vm_operations_struct mmap_vm_ops = {
 	.open = mmap_open,
@@ -79,23 +96,6 @@ static int my_mmap(struct file *flip, struct vm_area_struct *vma) {
 	mmap_open(vma);
 	return 0;
 }
-
-//file operations
-static struct file_operations slave_fops = {
-	.owner = THIS_MODULE,
-	.unlocked_ioctl = slave_ioctl,
-	.open = slave_open,
-	.read = receive_msg,
-	.release = slave_close,
-	.mmap = my_mmap
-};
-
-//device info
-static struct miscdevice slave_dev = {
-	.minor = MISC_DYNAMIC_MINOR,
-	.name = "slave_device",
-	.fops = &slave_fops
-};
 
 static int __init slave_init(void)
 {
