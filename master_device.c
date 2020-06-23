@@ -28,7 +28,7 @@
 #define master_IOCTL_CREATESOCK 0x12345677
 #define master_IOCTL_MMAP 0x12345678
 #define master_IOCTL_EXIT 0x12345679
-#define BUF_SIZE 4096
+#define BUF_SIZE 512
 
 #define num_page 50//I'm not sure whether this is necessary or not, adding this line only because the same line appears in slave_device.c.
 
