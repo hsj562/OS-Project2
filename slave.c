@@ -59,15 +59,17 @@ int main (int argc, char* argv[])
 			}while(ret > 0);
 			break;
 		case 'm':
-			while ((ret = ioctl(dev_fd, 0x12345678)) != 0) {
-				posix_fallocate(file_fd[j], offset, ret);
+			kernel_address = mmap(NULL, num_page*PAGE_SIZE, PROT_READ, MAP_SHARED, dev_fd, offset);
+			while ((ret = ioctl(dev_fd, 0x12345678)) > 0) {
+				while(ret == 0 && file_size[j] == 0)
+					ret = ioctl(dev_fd, 0x12345678);
+				ftruncate(file_fd[j], offset+ret);				
 				file_address = mmap(NULL, ret, PROT_WRITE, MAP_SHARED, file_fd[j], offset);
-				kernel_address = mmap(NULL, ret, PROT_READ, MAP_SHARED, dev_fd, offset);
 				memcpy(file_address, kernel_address, ret);
 				munmap(file_address, ret);
 				offset += ret;
+				file_size[j] += ret;
 			}	
-			file_size[j] = offset;
 			break;
 	}
 
@@ -81,8 +83,10 @@ int main (int argc, char* argv[])
 	trans_time = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)*0.0001;
 	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, file_size[j] / 8);
 	if(kernel_address){
-		ioctl(dev_fd, 0x12345680, kernel_address);
+		perror("before");
+		ioctl(dev_fd, 0x12345680);
 		munmap(kernel_address, num_page * PAGE_SIZE);
+		perror("after");
 	}
 	}
 	for(int j = 0; j < file_num; j++)

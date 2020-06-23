@@ -58,7 +58,7 @@ int main (int argc, char* argv[])
 		return 1;
 	}
 
-	size_t map_sz = PAGE_SIZE * 5;
+	size_t map_sz = PAGE_SIZE * num_page;
 	switch(method[0])
 	{
 		case 'f': //fcntl : read()/write()
@@ -70,21 +70,23 @@ int main (int argc, char* argv[])
 			}while(ret > 0);
 			break;
 		case 'm': // mmap
-			while(file_size - offset > map_sz) {
+			kernel_address = mmap(NULL, map_sz, PROT_WRITE, MAP_SHARED, dev_fd, offset);
+			while(file_size[j] - offset > map_sz) {
 				file_address = mmap(NULL, map_sz, PROT_READ, MAP_SHARED, file_fd[j], offset);
-				kernel_address = mmap(NULL, map_sz, PROT_WRITE, MAP_SHARED, dev_fd, offset);
+				
 				offset += map_sz;
+				//perror("before memcpy\n");
 				memcpy(kernel_address, file_address, map_sz);
+				perror("after memcpy\n");
 				ioctl(dev_fd, 0x12345678, map_sz);
 				munmap(file_address, map_sz);
 			}
-			if(file_size - offset > 0) {
-				file_address = mmap(NULL, file_size-offset, PROT_READ, MAP_SHARED, file_fd[j], offset);
-				kernel_address = mmap(NULL, file_size-offset, PROT_WRITE, MAP_SHARED, dev_fd, offset);
-				memcpy(kernel_address, file_address, file_size-offset);
-				ioctl(dev_fd, 0x12345678, file_size-offset);
-				munmap(file_address, file_size-offset);
-				offset = file_size;
+			if(file_size[j] - offset > 0) {
+				file_address = mmap(NULL, file_size[j]-offset, PROT_READ, MAP_SHARED, file_fd[j], offset);
+				memcpy(kernel_address, file_address, file_size[j]-offset);
+				ioctl(dev_fd, 0x12345678, file_size[j]-offset);
+				munmap(file_address, file_size[j]-offset);
+				offset = file_size[j];
 			}
 	}
 	if((ret = ioctl(dev_fd, 0x12345679)) == -1) // end sending data, close the connection
@@ -97,8 +99,10 @@ int main (int argc, char* argv[])
 	trans_time = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)*0.0001;
 	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, file_size[j] / 8);
 	if(kernel_address){
-		ioctl(dev_fd, 0x12345680, kernel_address);
-		munmap(kernel_address, num_page * PAGE_SIZE);
+		perror("before");
+		ioctl(dev_fd, 0x12345680);
+		munmap(kernel_address, map_sz);
+		perror("after");
 	}
 	}
 	for(int j = 0; j < file_cnt; j++)
