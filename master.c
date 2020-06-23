@@ -97,7 +97,7 @@ int main (int argc, char* argv[])
 	trans_time = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)*0.0001;
 	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, file_size[j] / 8);
 	if(kernel_address){
-		ioctl(dev_fd, 0x12345680);
+		ioctl(dev_fd, 0x12345680, kernel_address);
 		munmap(kernel_address, num_page * PAGE_SIZE);
 	}
 	}
