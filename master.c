@@ -52,6 +52,7 @@ int main (int argc, char* argv[])
 		}
 	}
 	for(int j = 0; j < file_cnt; j++){
+		offset = 0;
 	if(ioctl(dev_fd, 0x12345677) == -1) //0x12345677 : create socket and accept the connection from the slave
 	{
 		perror("ioclt server create socket error\n");
@@ -70,22 +71,34 @@ int main (int argc, char* argv[])
 			}while(ret > 0);
 			break;
 		case 'm': // mmap
-			kernel_address = mmap(NULL, map_sz, PROT_WRITE, MAP_SHARED, dev_fd, offset);
+			
+
 			while(file_size[j] - offset > map_sz) {
 				file_address = mmap(NULL, map_sz, PROT_READ, MAP_SHARED, file_fd[j], offset);
+				perror("before kernel_address");
+				kernel_address = mmap(NULL, map_sz, PROT_WRITE, MAP_SHARED, dev_fd, offset);
+				perror("after kernel_address");
 				
 				offset += map_sz;
 				//perror("before memcpy\n");
+
 				memcpy(kernel_address, file_address, map_sz);
 				perror("after memcpy\n");
 				ioctl(dev_fd, 0x12345678, map_sz);
 				munmap(file_address, map_sz);
+				munmap(kernel_address, map_sz);
 			}
 			if(file_size[j] - offset > 0) {
 				file_address = mmap(NULL, file_size[j]-offset, PROT_READ, MAP_SHARED, file_fd[j], offset);
+				perror("before kernel_address");
+				
+				kernel_address = mmap(NULL, file_size[j]-offset, PROT_WRITE, MAP_SHARED, dev_fd, offset);
+				perror("after kernel_address");
+				
 				memcpy(kernel_address, file_address, file_size[j]-offset);
 				ioctl(dev_fd, 0x12345678, file_size[j]-offset);
 				munmap(file_address, file_size[j]-offset);
+				munmap(kernel_address, file_size[j]-offset);
 				offset = file_size[j];
 			}
 	}
@@ -98,12 +111,7 @@ int main (int argc, char* argv[])
 	gettimeofday(&end, NULL);
 	trans_time = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)*0.0001;
 	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, file_size[j] / 8);
-	if(kernel_address){
-		perror("before");
-		ioctl(dev_fd, 0x12345680);
-		munmap(kernel_address, map_sz);
-		perror("after");
-	}
+	ioctl(dev_fd, 0x12345680);
 	}
 	for(int j = 0; j < file_cnt; j++)
 		close(file_fd[j]);
