@@ -22,9 +22,9 @@ int main (int argc, char* argv[])
 	int file_cnt = atoi(argv[1]);
 
 	char buf[BUF_SIZE];
-	int i, dev_fd, file_fd;// the fd for the device and the fd for the input file
-	size_t ret, file_size, offset = 0, tmp;
-	char file_name[50], method[20];
+	int i, dev_fd, file_fd[100];// the fd for the device and the fd for the input file
+	size_t ret, file_size[100], offset = 0, tmp;
+	char file_name[100][50], method[20];
 	
 	strcpy(method, argv[2 + file_cnt]);
 	
@@ -32,27 +32,26 @@ int main (int argc, char* argv[])
 	struct timeval start;
 	struct timeval end;
 	double trans_time; //calulate the time between the device is opened and it is closed
-	
-	for(int j = 0; j < file_cnt; j++){
-	strcpy(file_name, argv[2 + j]);	// if file_cnt = 1
 	if( (dev_fd = open("/dev/master_device", O_RDWR)) < 0)
 	{
 		perror("failed to open /dev/master_device\n");
 		return 1;
 	}
 	gettimeofday(&start ,NULL);
-	if( (file_fd = open (file_name, O_RDWR)) < 0 )
-	{
-		perror("failed to open input file\n");
-		return 1;
-	}
-
-	if( (file_size = get_filesize(file_name)) < 0)
-	{
+	for(int j = 0; j < file_cnt; j++){
+		strcpy(file_name[j], argv[2 + j]);	// if file_cnt = 1
+		if( (file_fd[j] = open (file_name[j], O_RDWR)) < 0 )
+		{
+			perror("failed to open input file\n");
+			return 1;
+		}
+		if( (file_size[j] = get_filesize(file_name[j])) < 0)
+		{
 		perror("failed to get filesize\n");
 		return 1;
+		}
 	}
-
+	for(int j = 0; j < file_cnt; j++)
 	if(ioctl(dev_fd, 0x12345677) == -1) //0x12345677 : create socket and accept the connection from the slave
 	{
 		perror("ioclt server create socket error\n");
@@ -65,21 +64,21 @@ int main (int argc, char* argv[])
 		case 'f': //fcntl : read()/write()
 			do
 			{
-				ret = read(file_fd, buf, sizeof(buf)); // read from the input file
+				ret = read(file_fd[j], buf, sizeof(buf)); // read from the input file
 				//printf("write %d bytes\n", ret);
 				write(dev_fd, buf, ret);//write to the the device
 			}while(ret > 0);
 			break;
 		case 'm': // mmap
 			while(file_size - offset > map_sz) {
-				file_address = mmap(NULL, map_sz, PROT_READ, MAP_SHARED, file_fd, offset);
+				file_address = mmap(NULL, map_sz, PROT_READ, MAP_SHARED, file_fd[j], offset);
 				kernel_address = mmap(NULL, map_sz, PROT_WRITE, MAP_SHARED, dev_fd, offset);
 				offset += map_sz;
 				memcpy(kernel_address, file_address, map_sz);
 				ioctl(dev_fd, 0x12345678, map_sz);
 			}
 			if(file_size - offset > 0) {
-				file_address = mmap(NULL, file_size-offset, PROT_READ, MAP_SHARED, file_fd, offset);
+				file_address = mmap(NULL, file_size-offset, PROT_READ, MAP_SHARED, file_fd[j], offset);
 				kernel_address = mmap(NULL, file_size-offset, PROT_WRITE, MAP_SHARED, dev_fd, offset);
 				memcpy(kernel_address, file_address, file_size-offset);
 				ioctl(dev_fd, 0x12345678, file_size-offset);
@@ -99,10 +98,10 @@ int main (int argc, char* argv[])
 		ioctl(dev_fd, 0x12345680);
 		munmap(dev_fd, num_page * PAGE_SIZE);
 	}
-
-	close(file_fd);
-	close(dev_fd);
 	}
+	for(int j = 0; j < file_cnt; j++)
+		close(file_fd[j]);
+	close(dev_fd);
 	return 0;
 }
 
