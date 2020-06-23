@@ -26,7 +26,7 @@ int main (int argc, char* argv[])
 	size_t ret, file_size, offset = 0, tmp;
 	char file_name[50], method[20];
 	
-	strcpy(method, argv[3]);
+	strcpy(method, argv[2 + file_cnt]);
 	
 	char *kernel_address = NULL, *file_address = NULL;
 	struct timeval start;
@@ -34,7 +34,7 @@ int main (int argc, char* argv[])
 	double trans_time; //calulate the time between the device is opened and it is closed
 	
 	for(int j = 0; j < file_cnt; j++){
-	strcpy(file_name, argv[2 + file_cnt]);	// if file_cnt = 1
+	strcpy(file_name, argv[2 + j]);	// if file_cnt = 1
 	if( (dev_fd = open("/dev/master_device", O_RDWR)) < 0)
 	{
 		perror("failed to open /dev/master_device\n");
