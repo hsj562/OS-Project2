@@ -27,17 +27,14 @@ int main (int argc, char* argv[])
 	char *kernel_address, *file_address;
 	strcpy(method, argv[2 + file_num]);
 	strcpy(ip, argv[3 + file_num]);
-	for(int j = 0; j < file_num; j++){
-	strcpy(file_name, argv[2 + j]);
 	if( (dev_fd = open("/dev/slave_device", O_RDWR)) < 0)//should be O_RDWR for PROT_WRITE when mmap()
 	{
 		perror("failed to open /dev/slave_device\n");
 		return 1;
 	}
-	}
 	gettimeofday(&start ,NULL);
 	for(int j = 0; j < file_num; j++){
-		strcpy(file_name, argv[2 + j]);
+		strcpy(file_name[j], argv[2 + j]);
 		if( (file_fd[j] = open (file_name[j], O_RDWR | O_CREAT | O_TRUNC)) < 0)
 		{
 			perror("failed to open input file\n");
