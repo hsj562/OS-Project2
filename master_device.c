@@ -91,7 +91,7 @@ static int my_mmap(struct file *filp, struct vm_area_struct *vma){
 	vma->vm_ops = &mmap_vm_ops;
 	vma->vm_private_data = filp->private_data;
 	vma->vm_flags |= VM_RESERVED;
-	int size = vma->vm_end - vma->vm_start;
+	unsigned long size = vma->vm_end - vma->vm_start;
 	remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, size, vma->vm_page_prot);
 	mmap_open(vma);
 	return 0;
