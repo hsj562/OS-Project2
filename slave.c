@@ -34,6 +34,7 @@ int main (int argc, char* argv[])
 		perror("failed to open /dev/slave_device\n");
 		return 1;
 	}
+	}
 	gettimeofday(&start ,NULL);
 	for(int j = 0; j < file_num; j++){
 		strcpy(file_name, argv[2 + j]);
@@ -56,19 +57,19 @@ int main (int argc, char* argv[])
 			do
 			{
 				ret = read(dev_fd, buf, sizeof(buf)); // read from the the device
-				write(file_fd, buf, ret); //write to the input file
-				file_size += ret;
+				write(file_fd[j], buf, ret); //write to the input file
+				file_size[j] += ret;
 			}while(ret > 0);
 			break;
 		case 'm':
 			while ((ret = ioctl(dev_fd, 0x12345678)) != 0) {
 				posix_fallocate(file_fd, offset, ret);
-				file_address = mmap(NULL, ret, PROT_WRITE, MAP_SHARED, file_fd, offset);
+				file_address = mmap(NULL, ret, PROT_WRITE, MAP_SHARED, file_fd[j], offset);
 				kernel_address = mmap(NULL, ret, PROT_READ, MAP_SHARED, dev_fd, offset);
 				memcpy(file_address, kernel_address, ret);
 				offset += ret;
 			}	
-			file_size = offset;
+			file_size[j] = offset;
 			break;
 	}
 
@@ -80,7 +81,7 @@ int main (int argc, char* argv[])
 	}
 	gettimeofday(&end, NULL);
 	trans_time = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)*0.0001;
-	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, file_size / 8);
+	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, file_size[j] / 8);
 	if(kernel_address){
 		ioctl(dev_fd, 0x12345680);
 		munmap(dev_fd, num_page * PAGE_SIZE);
