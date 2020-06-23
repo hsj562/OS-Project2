@@ -31,7 +31,7 @@
 
 #define slave_PRINT_DESCRIPTOR 0x12345680
 #define num_page 50
-#define BUF_SIZE 512
+#define BUF_SIZE 4096
 
 
 struct dentry  *file1;//debug file
