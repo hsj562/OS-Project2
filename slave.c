@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
-
+#include <stdlib.h>
 #define num_page 50
 #define PAGE_SIZE 4096
 #define BUF_SIZE 512
@@ -28,7 +28,8 @@ int main (int argc, char* argv[])
 	strcpy(file_name, argv[1 + file_num]);
 	strcpy(method, argv[2 + file_num]);
 	strcpy(ip, argv[3 + file_num]);
-
+	for(int j = 0; j < file_num; j++){
+	strcpy(file_name, argv[2 + file_num]);
 	if( (dev_fd = open("/dev/slave_device", O_RDWR)) < 0)//should be O_RDWR for PROT_WRITE when mmap()
 	{
 		perror("failed to open /dev/slave_device\n");
@@ -85,5 +86,6 @@ int main (int argc, char* argv[])
 
 	close(file_fd);
 	close(dev_fd);
+	}
 	return 0;
 }
