@@ -59,7 +59,7 @@ static struct sockaddr_in addr_srv; //address of the master server
 
 static int my_mmap(struct file *flip, struct vm_area_struct *vma);
 
-void mmap_open(struct vm_area_strcut *vma) {
+void mmap_open(struct vm_area_struct *vma) {
 	return;
 }
 void mmap_close(struct vm_area_struct *vma) {
@@ -71,8 +71,8 @@ static struct file_operations slave_fops = {
 	.unlocked_ioctl = slave_ioctl,
 	.open = slave_open,
 	.read = receive_msg,
-	.release = slave_close,
-	.mmap = my_mmap
+	.mmap = my_mmap,
+	.release = slave_close
 };
 //device info
 static struct miscdevice slave_dev = {
