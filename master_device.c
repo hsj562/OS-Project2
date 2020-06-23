@@ -30,6 +30,8 @@
 #define master_IOCTL_EXIT 0x12345679
 #define BUF_SIZE 512
 
+#define num_page 50//I'm not sure whether this is necessary or not, adding this line only because the same line appears in slave_device.c.
+
 typedef struct socket * ksocket_t;
 
 struct dentry  *file1;//debug file
@@ -159,11 +161,13 @@ static void __exit master_exit(void)
 
 int master_close(struct inode *inode, struct file *filp)
 {
+	kfree(filp->private_data);
 	return 0;
 }
 
 int master_open(struct inode *inode, struct file *filp)
 {
+	filp->private_data = kmalloc(PAGE_SIZE * num_page, GFP_KERNEL);
 	return 0;
 }
 
