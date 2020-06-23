@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
+#define num_page 50
 #define PAGE_SIZE 4096
 #define BUF_SIZE 512
 size_t get_filesize(const char* filename);//get the size of the input file
@@ -52,13 +53,11 @@ int main (int argc, char* argv[])
 		return 1;
 	}
 
-
 	if(ioctl(dev_fd, 0x12345677) == -1) //0x12345677 : create socket and accept the connection from the slave
 	{
 		perror("ioclt server create socket error\n");
 		return 1;
 	}
-
 
 	size_t map_sz = PAGE_SIZE * 5;
 	switch(method[0])
@@ -67,6 +66,7 @@ int main (int argc, char* argv[])
 			do
 			{
 				ret = read(file_fd, buf, sizeof(buf)); // read from the input file
+				//printf("write %d bytes\n", ret);
 				write(dev_fd, buf, ret);//write to the the device
 			}while(ret > 0);
 			break;
@@ -86,16 +86,19 @@ int main (int argc, char* argv[])
 				offset = file_size;
 			}
 	}
-	ioctl(dev_fd, 0);
-
-	if(ioctl(dev_fd, 0x12345679) == -1) // end sending data, close the connection
+	if((ret = ioctl(dev_fd, 0x12345679)) == -1) // end sending data, close the connection
 	{
 		perror("ioclt server exits error\n");
 		return 1;
 	}
+	//printf("ret = %d\n", ret);
 	gettimeofday(&end, NULL);
 	trans_time = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)*0.0001;
 	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, file_size / 8);
+	if(kernel_address){
+		ioctl(dev_fd, 0x12345680);
+		munmap(dev_fd, num_page * PAGE_SIZE);
+	}
 
 	close(file_fd);
 	close(dev_fd);
