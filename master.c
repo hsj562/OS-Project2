@@ -76,12 +76,14 @@ int main (int argc, char* argv[])
 				offset += map_sz;
 				memcpy(kernel_address, file_address, map_sz);
 				ioctl(dev_fd, 0x12345678, map_sz);
+				munmap(file_address, map_sz);
 			}
 			if(file_size - offset > 0) {
 				file_address = mmap(NULL, file_size-offset, PROT_READ, MAP_SHARED, file_fd[j], offset);
 				kernel_address = mmap(NULL, file_size-offset, PROT_WRITE, MAP_SHARED, dev_fd, offset);
 				memcpy(kernel_address, file_address, file_size-offset);
 				ioctl(dev_fd, 0x12345678, file_size-offset);
+				munmap(file_address, file_size-offset);
 				offset = file_size;
 			}
 	}
@@ -96,7 +98,7 @@ int main (int argc, char* argv[])
 	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, file_size[j] / 8);
 	if(kernel_address){
 		ioctl(dev_fd, 0x12345680);
-		munmap(dev_fd, num_page * PAGE_SIZE);
+		munmap(kernel_address, num_page * PAGE_SIZE);
 	}
 	}
 	for(int j = 0; j < file_cnt; j++)
