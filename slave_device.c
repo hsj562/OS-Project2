@@ -72,7 +72,7 @@ struct vm_operations_struct mmap_vm_ops = {
 static int my_mmap(struct file *flip, struct vm_area_struct *vma) {
 	vma->vm_flags |= VM_RESERVED;
 	vma->vm_ops = &mmap_vm_ops;
-	vma->vm_private = flip->private_data;
+	vma->vm_private_data = flip->private_data;
 
 	unsigned long size = vma->vm_end - vma->vm_start;
 	remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, size, vma->vm_page_prot);
@@ -186,7 +186,7 @@ static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
 			ret = 0;
 			break;
 		case slave_IOCTL_MMAP:
-			ret = krecv(socketfd_cli, file->private_data, PAGE_SIZE, 0);
+			ret = krecv(sockfd_cli, file->private_data, PAGE_SIZE, 0);
 			break;
 
 		case slave_IOCTL_EXIT:
