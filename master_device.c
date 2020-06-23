@@ -88,11 +88,11 @@ struct vm_operations_struct mmap_vm_ops = {
 };
 
 static int my_mmap(struct file *filp, struct vm_area_struct *vma){
-	if (remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, vma->vm_end - vma->vm_start, vma->vm_page_prot))
-		return -EIO;
-	vma->vm_flags |= VM_RESERVED;
 	vma->vm_ops = &mmap_vm_ops;
 	vma->vm_private_data = filp->private_data;
+	vma->vm_flags |= VM_RESERVED;
+	int size = vma->vm_end - vma->vm_start;
+	remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, size, vma->vm_page_prot)
 	mmap_open(vma);
 	return 0;
 }
