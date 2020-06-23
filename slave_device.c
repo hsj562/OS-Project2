@@ -29,7 +29,8 @@
 #define slave_IOCTL_MMAP 0x12345678
 #define slave_IOCTL_EXIT 0x12345679
 
-
+#define slave_PRINT_DESCRIPTOR 0x12345680
+#define num_page 50
 #define BUF_SIZE 512
 
 
@@ -92,7 +93,8 @@ static int my_mmap(struct file *flip, struct vm_area_struct *vma) {
 	vma->vm_private_data = flip->private_data;
 
 	unsigned long size = vma->vm_end - vma->vm_start;
-	remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, size, vma->vm_page_prot);
+	if(remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, size, vma->vm_page_prot))
+		return -EAGAIN;
 	mmap_open(vma);
 	return 0;
 }
@@ -123,12 +125,13 @@ static void __exit slave_exit(void)
 
 int slave_close(struct inode *inode, struct file *filp)
 {
-	
+	kfree(filp->private_data);
 	return 0;
 }
 
 int slave_open(struct inode *inode, struct file *filp)
 {
+	filp->private_data = kmalloc(PAGE_SIZE * num_page, GFP_KERNEL);
 	return 0;
 }
 static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param)
@@ -186,7 +189,7 @@ static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
 			ret = 0;
 			break;
 		case slave_IOCTL_MMAP:
-			ret = krecv(sockfd_cli, file->private_data, PAGE_SIZE, 0);
+			ret = krecv(sockfd_cli, file->private_data, PAGE_SIZE, MSG_WAITALL);
 			break;
 
 		case slave_IOCTL_EXIT:
@@ -197,15 +200,22 @@ static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
 			}
 			ret = 0;
 			break;
-		default:
-            pgd = pgd_offset(current->mm, ioctl_param);
+		case slave_PRINT_DESCRIPTOR:
+			pgd = pgd_offset(current->mm, ioctl_param);
 			p4d = p4d_offset(pgd, ioctl_param);
 			pud = pud_offset(p4d, ioctl_param);
 			pmd = pmd_offset(pud, ioctl_param);
 			ptep = pte_offset_kernel(pmd , ioctl_param);
 			pte = *ptep;
-			printk("slave: %lX\n", pte);
+			if(pte_none(pte)){
+				printk("slave: pte fault\n");
+				break;
+			}
+			printk("master: %lX\n", pte);
 			ret = 0;
+			break;
+		default:
+            		printk("unknown ioctl parameter");
 			break;
 	}
 	set_fs(old_fs);
