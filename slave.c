@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
+#define num_page 50
 #define PAGE_SIZE 4096
 #define BUF_SIZE 512
 int main (int argc, char* argv[])
@@ -67,7 +68,6 @@ int main (int argc, char* argv[])
 			file_size = offset;
 			break;
 	}
-	ioctl(dev_fd, 5235);
 
 
 	if(ioctl(dev_fd, 0x12345679) == -1)// end receiving data, close the connection
@@ -78,7 +78,10 @@ int main (int argc, char* argv[])
 	gettimeofday(&end, NULL);
 	trans_time = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)*0.0001;
 	printf("Transmission time: %lf ms, File size: %d bytes\n", trans_time, file_size / 8);
-
+	if(kernel_address){
+		ioctl(dev_fd, 0x12345680);
+		munmap(dev_fd, num_page * PAGE_SIZE);
+	}
 
 	close(file_fd);
 	close(dev_fd);
