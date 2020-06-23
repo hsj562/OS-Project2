@@ -93,7 +93,7 @@ static int my_mmap(struct file *flip, struct vm_area_struct *vma) {
 	vma->vm_private_data = flip->private_data;
 
 	unsigned long size = vma->vm_end - vma->vm_start;
-	if(remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, size, vma->vm_page_prot))
+	if(remap_pfn_range(vma, vma->vm_start, virt_to_phys(vma->cm_private_data)>>PAGE_SHIFT, size, vma->vm_page_prot))
 		return -EAGAIN;
 	mmap_open(vma);
 	return 0;
