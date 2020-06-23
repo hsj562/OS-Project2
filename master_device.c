@@ -29,7 +29,6 @@
 #define master_IOCTL_MMAP 0x12345678
 #define master_IOCTL_EXIT 0x12345679
 #define BUF_SIZE 512
-#define master_PRINT_DESCRIPTOR 0x12345680
 
 #define num_page 50//I'm not sure whether this is necessary or not, adding this line only because the same line appears in slave_device.c.
 
@@ -212,22 +211,15 @@ static long master_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
 			}
 			ret = 0;
 			break;
-		case master_PRINT_DESCRIPTOR:
+		default:
 			pgd = pgd_offset(current->mm, ioctl_param);
 			p4d = p4d_offset(pgd, ioctl_param);
 			pud = pud_offset(p4d, ioctl_param);
 			pmd = pmd_offset(pud, ioctl_param);
 			ptep = pte_offset_kernel(pmd , ioctl_param);
 			pte = *ptep;
-			if(pte_none(pte)){
-				printk("master: pte fault\n");
-				break;
-			}
 			printk("master: %lX\n", pte);
 			ret = 0;
-			break;
-		default:
-            		printk("unknown ioctl parameter");
 			break;
 	}
 

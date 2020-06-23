@@ -228,7 +228,7 @@ ssize_t receive_msg(struct file *filp, char *buf, size_t count, loff_t *offp )
 //call when user is reading from this device
 	char msg[BUF_SIZE];
 	size_t len;
-	len = krecv(sockfd_cli, msg, sizeof(msg), 0);
+	len = krecv(sockfd_cli, msg, count, 0);
 	if(copy_to_user(buf, msg, len))
 		return -ENOMEM;
 	return len;
