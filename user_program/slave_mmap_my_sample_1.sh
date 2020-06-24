@@ -1,0 +1,1 @@
+sudo ./slave 3 ../output/my_output_1/mmap_result_1.txt ../output/my_output_1/mmap_result_2.txt ../output/my_output_1/mmap_result_3.txt mmap 127.0.0.1 > ../output/my_output_1/my_sample_1_time_size_mmap_result.txt
