@@ -153,7 +153,7 @@ static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
 
-    printk("slave device ioctl");
+    //printk("slave device ioctl");
 
 	switch(ioctl_num){
 		case slave_IOCTL_CREATESOCK:// create socket and connect to master
@@ -211,7 +211,7 @@ static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
 				printk("slave: pte fault\n");
 				break;
 			}
-			printk("master: %lX\n", pte);
+			printk("slave: %lX\n", pte);
 			ret = 0;
 			break;
 		default:

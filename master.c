@@ -75,25 +75,25 @@ int main (int argc, char* argv[])
 
 			while(file_size[j] - offset > map_sz) {
 				file_address = mmap(NULL, map_sz, PROT_READ, MAP_SHARED, file_fd[j], offset);
-				perror("before kernel_address");
+				//perror("before kernel_address");
 				kernel_address = mmap(NULL, map_sz, PROT_WRITE, MAP_SHARED, dev_fd, offset);
-				perror("after kernel_address");
+				//perror("after kernel_address");
 				
 				offset += map_sz;
 				//perror("before memcpy\n");
 
 				memcpy(kernel_address, file_address, map_sz);
-				perror("after memcpy\n");
+				//perror("after memcpy\n");
 				ioctl(dev_fd, 0x12345678, map_sz);
 				munmap(file_address, map_sz);
 				munmap(kernel_address, map_sz);
 			}
 			if(file_size[j] - offset > 0) {
 				file_address = mmap(NULL, file_size[j]-offset, PROT_READ, MAP_SHARED, file_fd[j], offset);
-				perror("before kernel_address");
+				//perror("before kernel_address");
 				
 				kernel_address = mmap(NULL, file_size[j]-offset, PROT_WRITE, MAP_SHARED, dev_fd, offset);
-				perror("after kernel_address");
+				//perror("after kernel_address");
 				
 				memcpy(kernel_address, file_address, file_size[j]-offset);
 				ioctl(dev_fd, 0x12345678, file_size[j]-offset);
