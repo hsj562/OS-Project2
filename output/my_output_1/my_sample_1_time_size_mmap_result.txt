@@ -1,3 +1,3 @@
-Transmission time: 0.198500 ms, File size: 51200 bytes
-Transmission time: 0.397700 ms, File size: 51200 bytes
-Transmission time: 0.681800 ms, File size: 51200 bytes
+Transmission time: 0.221600 ms, File size: 51200 bytes
+Transmission time: 0.520100 ms, File size: 51200 bytes
+Transmission time: 0.976500 ms, File size: 51200 bytes
