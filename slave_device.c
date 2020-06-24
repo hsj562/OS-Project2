@@ -58,6 +58,13 @@ static mm_segment_t old_fs;
 static ksocket_t sockfd_cli;//socket to the master server
 static struct sockaddr_in addr_srv; //address of the master server
 
+#ifdef ASYN
+static struct workqueue_struct *wq_fcntl;
+DECLARE_WORK(work_fcntl, (void *)receive_msg);
+static struct workqueue_struct *wq_mmap;
+DECLARE_WORK(work_mmap, (void *)slave_ioctl);
+#endif
+
 static int my_mmap(struct file *flip, struct vm_area_struct *vma);
 
 void mmap_open(struct vm_area_struct *vma) {
@@ -96,6 +103,12 @@ static int my_mmap(struct file *flip, struct vm_area_struct *vma) {
 	if(remap_pfn_range(vma, vma->vm_start, virt_to_phys(vma->vm_private_data)>>PAGE_SHIFT, size, vma->vm_page_prot))
 		return -EAGAIN;
 	mmap_open(vma);
+
+	#ifdef ASYN
+	wq_map = create_workqueue("slave_wq_mmap");
+	queue_work(wq_mmap, &work_mmap);
+	#endif
+
 	return 0;
 }
 
@@ -118,6 +131,12 @@ static int __init slave_init(void)
 static void __exit slave_exit(void)
 {
 	misc_deregister(&slave_dev);
+
+	#ifdef ASYN
+	if(wq_fcntl) destroy_workqueue(wq_fcntl);
+	if(wq_mmap) destroy_workqueue(wq_mmap);
+	#endif
+	
 	printk(KERN_INFO "slave exited!\n");
 	debugfs_remove(file1);
 }
@@ -185,7 +204,12 @@ static long slave_ioctl(struct file *file, unsigned int ioctl_num, unsigned long
 			tmp = inet_ntoa(&addr_srv.sin_addr);
 			printk("connected to : %s %d\n", tmp, ntohs(addr_srv.sin_port));
 			kfree(tmp);
-			printk("kfree(tmp)");
+			//printk("kfree(tmp)");
+
+			#ifdef ASYN
+			wq_fcntl = create_workqueue("slave_wq_fcntl");
+			#endif
+
 			ret = 0;
 			break;
 		case slave_IOCTL_MMAP:
@@ -233,8 +257,6 @@ ssize_t receive_msg(struct file *filp, char *buf, size_t count, loff_t *offp )
 		return -ENOMEM;
 	return len;
 }
-
-
 
 
 module_init(slave_init);

@@ -61,6 +61,13 @@ static mm_segment_t old_fs;
 static int addr_len;
 //static  struct mmap_info *mmap_msg; // pointer to the mapped data in this device
 
+#ifdef ASYN
+static struct workqueue_struct *wq_fcntl;
+DECLARE_WORK(work_fcntl, (void *)send_msg);
+static struct workqueue_struct *wq_mmap;
+DECLARE_WORK(work_mmap, (void *)master_ioctl);
+#endif
+
 //file operations
 static int my_mmap(struct file *filp, struct vm_area_struct *vma);
 
@@ -97,6 +104,10 @@ static int my_mmap(struct file *filp, struct vm_area_struct *vma){
 	unsigned long size = vma->vm_end - vma->vm_start;
 	remap_pfn_range(vma, vma->vm_start, virt_to_phys(vma->vm_private_data)>>PAGE_SHIFT, size, vma->vm_page_prot);
 	mmap_open(vma);
+	#ifdef ASYN
+	wq_mmap = create_workqueue("master_wq_mmap");
+	queue_work(wq_mmap, &work_mmap);
+	#endif
 	return 0;
 }
 static int __init master_init(void)
@@ -157,6 +168,10 @@ static void __exit master_exit(void)
 	}
 	set_fs(old_fs);
 	printk(KERN_INFO "master exited!\n");
+	#ifdef ASYN
+	if(wq_fcntl) destroy_workqueue(wq_fcntl);
+	if(wq_mmap) destroy_workqueue(wq_mmap);
+	#endif
 	debugfs_remove(file1);
 }
 
@@ -200,6 +215,12 @@ static long master_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
 			printk("got connected from : %s %d\n", tmp, ntohs(addr_cli.sin_port));
 			kfree(tmp);
 			ret = 0;
+
+			#ifdef ASYN
+			wq_fcntl = create_workqueue("master_wq_fcntl");
+			queue_work(wq_fcntl, &work_fcntl);
+			#endif
+			
 			break;
 		case master_IOCTL_MMAP:
 			ret = ksend(sockfd_cli, file->private_data, ioctl_param, 0);
