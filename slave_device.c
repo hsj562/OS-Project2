@@ -105,7 +105,7 @@ static int my_mmap(struct file *flip, struct vm_area_struct *vma) {
 	mmap_open(vma);
 
 	#ifdef ASYN
-	wq_map = create_workqueue("slave_wq_mmap");
+	wq_mmap = create_workqueue("slave_wq_mmap");
 	queue_work(wq_mmap, &work_mmap);
 	#endif
 
